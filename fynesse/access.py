@@ -127,12 +127,12 @@ def create_index(conn, table_name, index_name, column_name):
 def download_postcode_data():
   postcode_data_url = 'https://www.getthedata.com/downloads/open_postcode_geo.csv.zip'
   r = requests.get(postcode_data_url)
-
   with open('open_postcode_geo.csv.zip', 'wb') as outfile:
       outfile.write(r.content)
 
   with zipfile.ZipFile('open_postcode_geo.csv.zip', 'r') as zip_ref:
-      zip_ref.extractall('open_postcode_geo.csv')
+      zip_ref.extractall('.')
+  print("postcode data downloaded")
 
 
 def load_postcode_data(conn, table_name='postcode_data'):
