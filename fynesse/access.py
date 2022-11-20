@@ -46,7 +46,7 @@ def create_connection(user, password, host, database, port=3306):
 
 def initialize_database(conn, db_name):
   cur = conn.cursor()
-  cur.execute("""
+  cur.execute(f"""
     SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
     SET time_zone = "+00:00";
     CREATE DATABASE IF NOT EXISTS `{db_name}` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;
@@ -57,7 +57,7 @@ def initialize_database(conn, db_name):
 
 def initialize_pp_data_schema(conn, table_name='pp_data'):
   cur = conn.cursor()
-  cur.execute("""
+  cur.execute(f"""
     DROP TABLE IF EXISTS `{table_name}`;
     CREATE TABLE IF NOT EXISTS `{table_name}` (
       `transaction_unique_identifier` tinytext COLLATE utf8_bin NOT NULL,
@@ -83,16 +83,16 @@ def initialize_pp_data_schema(conn, table_name='pp_data'):
   print(f"Schema for table {table_name} initialized")
 
 
-def add_primary_key(conn, table_name):
+def add_primary_key(conn, table_name, column_name):
   cur = conn.cursor()
-  cur.execute("""
+  cur.execute(f"""
     ALTER TABLE `{table_name}`
-    ADD PRIMARY KEY (`db_id`);
-    ALTER TABLE `pp_data`
-    MODIFY `db_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+    ADD PRIMARY KEY (`{column_name}`);
+    ALTER TABLE `{table_name}`
+    MODIFY `{column_name}` bigint(20) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
   """)
   conn.commit()
-  print(f"Added primary key db_id for table {table_name}")
+  print(f"Added primary key {column_name} for table {table_name}")
 
 
 def download_pp_data(start_year=1995, end_year=2022):
