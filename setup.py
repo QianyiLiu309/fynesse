@@ -22,7 +22,7 @@ DESCRIPTION = "Template files for performing fynesse pipeline data analysis with
 URL = "https://github.com/lawrennd/fynesse_template"
 EMAIL = "emal@domain.here"
 AUTHOR = "Givenname Familyname"
-REQUIRES_PYTHON = ">=3.6.0"
+REQUIRES_PYTHON = ">=3.8.0"
 VERSION = "0.1.0"
 
 # What packages are required for this module to be executed?
@@ -128,7 +128,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy"
     ],
