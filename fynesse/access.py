@@ -9,6 +9,7 @@ import sqlite"""
 
 import pymysql
 from pymysql.constants import CLIENT
+import urllib.request
 
 # This file accesses the data
 
@@ -42,6 +43,7 @@ def create_connection(user, password, host, database, port=3306):
         print(f"Error connecting to the MariaDB Server: {e}")
     return conn
 
+
 def initialize_database(conn, db_name):
   cur = conn.cursor()
   cur.execute("""
@@ -51,3 +53,20 @@ def initialize_database(conn, db_name):
   """)
   conn.commit()
   print(f"Database {db_name} initialized")
+
+
+def initialize_table_pp_data(conn):
+    cur = conn.cursor()
+
+
+def download_pp_data(start_year=1995, end_year=2022):
+  base_url = "http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/"
+  for year in range(start_year, end_year + 1):
+    if year == 2022:
+      file_name = "pp-2022.csv"
+      urllib.request.urlretrieve(base_url + file_name, file_name)
+    else:
+      for part in range(1, 3):
+        file_name = "pp-" + str(year) + "-" + "part" + str(part) + ".csv"
+        urllib.request.urlretrieve(base_url + file_name, file_name)
+    print(f"pp_data for {year} downloaded")
