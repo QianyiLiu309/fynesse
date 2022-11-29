@@ -45,7 +45,7 @@ def verify_database(conn):
     print(df)
 
 
-def verify_index(conn, table_name):
+def verify_table_index(conn, table_name):
     """Check the indices of the table specified by table_name in the database
     :param conn: a connection object to the database
     :param table_name: table name
@@ -53,3 +53,13 @@ def verify_index(conn, table_name):
     """
     df = pd.read_sql(f"SHOW INDEX FROM `{table_name}`;", con=conn)
     print(df)
+
+
+def verify_table_content(conn, table_name):
+    """Check the contents of the table specified by table_name in the database
+    :param conn: a connection object to the database
+    :param table_name: table name
+    :return: a dataframe containing the first 5 rows in the table
+    """
+    df = pd.read_sql(f"SELECT * FROM `{table_name}` LIMIT 5;", con=conn)
+    return df
