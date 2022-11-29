@@ -111,7 +111,7 @@ class PricePaidDataTable(DatabaseTable):
             `transaction_unique_identifier` tinytext COLLATE utf8_bin NOT NULL,
             `price` int(10) unsigned NOT NULL,
             `date_of_transfer` date NOT NULL,
-            `postcode` varchar(8)P COLLATE utf8_bin NOT NULL,
+            `postcode` varchar(8) COLLATE utf8_bin NOT NULL,
             `property_type` varchar(1) COLLATE utf8_bin NOT NULL,
             `new_build_flag` varchar(1) COLLATE utf8_bin NOT NULL,
             `tenure_type` varchar(1) COLLATE utf8_bin NOT NULL,
