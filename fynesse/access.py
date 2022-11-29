@@ -173,7 +173,7 @@ class PricePaidDataTable(DatabaseTable):
         end_year = min(end_year, 2022)
         # assert start_year <= end_year
         for year in range(start_year, end_year + 1):
-            self.load_pp_data_single_year(self.conn, self.table_name, year)
+            self.load_pp_data_single_year(year)
 
 
 class PostcodeData(DatabaseTable):
