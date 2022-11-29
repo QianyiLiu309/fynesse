@@ -185,6 +185,34 @@ class PostcodeData(DatabaseTable):
     def __init__(self, conn, table_name):
         super().__init__(conn, table_name)
 
+    def initialize_property_prices_schema(self):
+        cur = self.conn.cursor()
+        cur.execute(f"""
+            DROP TABLE IF EXISTS `{self.table_name}`;
+            CREATE TABLE IF NOT EXISTS `{self.table_name}` (
+            `postcode` varchar(8) COLLATE utf8_bin NOT NULL,
+            `status` enum('live','terminated') NOT NULL,
+            `usertype` enum('small', 'large') NOT NULL,
+            `easting` int unsigned,
+            `northing` int unsigned,
+            `positional_quality_indicator` int NOT NULL,
+            `country` enum('England', 'Wales', 'Scotland', 'Northern Ireland', 'Channel Islands', 'Isle of Man') NOT NULL,
+            `lattitude` decimal(11,8) NOT NULL,
+            `longitude` decimal(10,8) NOT NULL,
+            `postcode_no_space` tinytext COLLATE utf8_bin NOT NULL,
+            `postcode_fixed_width_seven` varchar(7) COLLATE utf8_bin NOT NULL,
+            `postcode_fixed_width_eight` varchar(8) COLLATE utf8_bin NOT NULL,
+            `postcode_area` varchar(2) COLLATE utf8_bin NOT NULL,
+            `postcode_district` varchar(4) COLLATE utf8_bin NOT NULL,
+            `postcode_sector` varchar(6) COLLATE utf8_bin NOT NULL,
+            `outcode` varchar(4) COLLATE utf8_bin NOT NULL,
+            `incode` varchar(3)  COLLATE utf8_bin NOT NULL,
+            `db_id` bigint(20) unsigned NOT NULL
+            ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+        """)
+        self.conn.commit()
+        print(f"Schema for table {self.table_name} initialized")
+
     def download_postcode_data(self):
         postcode_data_url = (
             "https://www.getthedata.com/downloads/open_postcode_geo.csv.zip"
