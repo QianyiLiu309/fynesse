@@ -1,26 +1,32 @@
-from .config import *
+# This file accesses the data
 
-"""These are the types of import we might expect in this file
-import httplib2
-import oauth2
-import tables
-import mongodb
-import sqlite"""
+"""Place commands in this file to access the data electronically. Don't remove any missing values, or deal with outliers. Make sure you have legalities correct, both intellectual property and personal data privacy rights. Beyond the legal side also think about the ethical issues around this data. """
+
+from .config import *
 
 import pymysql
 from pymysql.constants import CLIENT
 import urllib.request
 import zipfile
 import requests
+import yaml
+from ipywidgets import interact_manual, Text, Password
 
 
-# This file accesses the data
+@interact_manual(username=Text(description="Username:"), 
+                 password=Password(description="Password:"))
+def write_credentials(username, password):
+    with open("credentials.yaml", "w") as file:
+        credentials_dict = {'username': username, 
+                            'password': password}
+        yaml.dump(credentials_dict, file)
 
-"""Place commands in this file to access the data electronically. Don't remove any missing values, or deal with outliers. Make sure you have legalities correct, both intellectual property and personal data privacy rights. Beyond the legal side also think about the ethical issues around this data. """
 
-def data():
-    """Read the data from the web or local file, returning structured format such as a data frame"""
-    raise NotImplementedError
+# def Connection():
+#     def __init__():
+
+
+
 
 def create_connection(user, password, host, database, port=3306):
     """ Create a database connection to the MariaDB database
