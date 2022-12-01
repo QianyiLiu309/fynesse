@@ -1,16 +1,14 @@
 from .config import *
 
 from fynesse import access
+import mlai
+import mlai.plot as plot
 import pandas as pd
 import math
 import geopandas as gpd
 
-import matplotlib.pyplot as plt
-
 import osmnx as ox
 import math
-import mlai
-import mlai.plot as plot
 
 """These are the types of import we might expect in this file
 import pandas
