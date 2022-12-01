@@ -232,3 +232,21 @@ def calculate_features(df, features, dist_threshold, pois_map):
                 feature_name,
             )
     return df
+
+
+def download_POI_for_feature_list(
+    latitude, longitude, feature_box_width, feature_box_height, features
+):
+    pois_map = {}
+    for name, prop in features.items():
+        tag = prop["tags"]
+        pois = download_POI_around_coordinate(
+            latitude,
+            longitude,
+            box_width=feature_box_width,
+            box_height=feature_box_height,
+            tags=tag,
+        )
+        pois_map[name] = pois
+        print(f"POIs for feature: {name} downloaded")
+    return pois_map
