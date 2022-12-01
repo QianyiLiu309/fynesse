@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 import osmnx as ox
 import math
+import random
 
 """These are the types of import we might expect in this file
 import pandas
@@ -183,3 +184,51 @@ def plot_POI(
     if graph_name is not None:
         ax.set_title(f"{graph_name}")
     plt.show()
+
+
+def sample_locations_from_bbox(
+    latitude, longitude, box_height, box_width, n_sample=100
+):
+    latitudes = []
+    longitudes = []
+    for _ in range(100):
+        i = random.uniform(latitude - box_height / 2, latitude + box_height / 2)
+        j = random.uniform(longitude - box_width / 2, longitude + box_width / 2)
+        latitudes.append(i)
+        longitudes.append(j)
+    return pd.DataFrame({"lattitude": latitudes, "longitude": longitudes})
+
+
+def calculate_single_feature(
+    df, feature_fn, dist_threshold, method_name, poi, feature_name
+):
+    column_name = feature_name + "_" + method_name
+    df[column_name] = df.apply(
+        lambda row: feature_fn(
+            row.lattitude.item(), row.longitude.item(), poi, dist_threshold
+        ),
+        axis=1,
+    )
+    return df
+
+
+def calculate_features(df, features, dist_threshold, pois_map):
+    for feature_name, prop in features.items():
+        for method_name in prop["methods"]:
+            if method_name == "cnt":
+                feature_fn = get_cnt_of_POI
+            elif method_name == "avg_dist":
+                feature_fn = get_average_distance_to_POI
+            elif method_name == "shortest_dist":
+                feature_fn = get_shortest_distance_to_POI
+            else:
+                raise NotImplementedError
+            df = calculate_single_feature(
+                df,
+                feature_fn,
+                dist_threshold,
+                method_name,
+                pois_map[feature_name],
+                feature_name,
+            )
+    return df
