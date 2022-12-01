@@ -187,7 +187,8 @@ class PostcodeData(DatabaseTable):
 
     def initialize_property_prices_schema(self):
         cur = self.conn.cursor()
-        cur.execute(f"""
+        cur.execute(
+            f"""
             DROP TABLE IF EXISTS `{self.table_name}`;
             CREATE TABLE IF NOT EXISTS `{self.table_name}` (
             `postcode` varchar(8) COLLATE utf8_bin NOT NULL,
@@ -209,7 +210,8 @@ class PostcodeData(DatabaseTable):
             `incode` varchar(3)  COLLATE utf8_bin NOT NULL,
             `db_id` bigint(20) unsigned NOT NULL
             ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-        """)
+        """
+        )
         self.conn.commit()
         print(f"Schema for table {self.table_name} initialized")
 
