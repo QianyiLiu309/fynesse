@@ -165,8 +165,11 @@ def filter_out_validation_data(transaction_df, val_db_id):
 
 def evaluate_model(conn, validation_df, model_name, args):
     """Evaluate the specified model using the known price of a property
-    : conn
-
+    :param conn: a connection to db
+    :param validation_df: the validation dataset of property price
+    :param model_name: a string representing model name
+    :param args: hyperparameters to the model
+    :return: a pair of arrays containing real property prices and predicted prices
     """
     real_price_ls = []
     predicted_price_ls = []

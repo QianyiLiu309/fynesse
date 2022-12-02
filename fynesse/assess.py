@@ -8,7 +8,6 @@ from sklearn.preprocessing import StandardScaler
 import geopandas as gpd
 import osmnx as ox
 
-
 import math
 import random
 import numpy as np
@@ -16,7 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-"""Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes rure they are correctly labeled. How is the data indexed. Crete visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
+"""Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes sure they are correctly labeled. How is the data indexed. Create visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
 
 
 def verify_database(conn):
@@ -138,6 +137,60 @@ def get_shortest_distance_to_POI(latitude, longitude, pois, threshold):
     return shortest_dist * 111
 
 
+def download_POI_around_coordinate(
+    latitude,
+    longitude,
+    box_width=0.02,
+    box_height=0.02,
+    tags={},
+    columns=["name", "addr:city", "addr:postcode", "addr:street", "geometry"],
+):
+    """Download POI as specified by tags around a coordinate
+    :param latitude: latitude
+    :param longitude: longitude
+    :param box_width: width of bbox
+    :param box_height: height of bbox
+    :param tags: a dict of POI tags
+    :param columns: a list of interested column names
+    :return: a geopandas dataframe containing points of interest
+    """
+    north, south, west, east = get_bbox(latitude, longitude, box_width, box_height)
+    pois = ox.geometries_from_bbox(north, south, east, west, tags)
+
+    for key in tags.keys():
+        if key not in columns:
+            columns.append(key)
+    present_columns = [key for key in columns if key in pois.columns]
+
+    return pois[present_columns]
+
+
+def download_POI_for_feature_list(
+    latitude, longitude, feature_box_width, feature_box_height, features
+):
+    """Download POIs from OpenStreetMap as specified by the tags attributes in `features`
+    :param latitude: latitude
+    :param longitude: longitude
+    :param feature_box_width: width of feature bbox
+    :param feature_box_height: height of feature bbox
+    :param features: a JSON encoding of features
+    :return: a mapping from feature name to POIs
+    """
+    pois_map = {}
+    for name, prop in features.items():
+        tag = prop["tags"]
+        pois = download_POI_around_coordinate(
+            latitude,
+            longitude,
+            box_width=feature_box_width,
+            box_height=feature_box_height,
+            tags=tag,
+        )
+        pois_map[name] = pois
+        print(f"POIs for feature: {name} downloaded")
+    return pois_map
+
+
 def create_gdf_from_df(
     df, latitude_col_name="lattitude", longitude_col_name="longitude"
 ):
@@ -169,81 +222,6 @@ def get_bbox(latitude, longitude, box_width, box_height):
     west = longitude - box_width / 2
     east = longitude + box_width / 2
     return (north, south, west, east)
-
-
-def download_POI_around_coordinate(
-    latitude,
-    longitude,
-    box_width=0.02,
-    box_height=0.02,
-    tags={},
-    columns=["name", "addr:city", "addr:postcode", "addr:street", "geometry"],
-):
-    """Download POI as specified by tags around a coordinate
-    :param latitude: latitude
-    :param longitude: longitude
-    :param box_width: width of bbox
-    :param box_height: height of bbox
-    :param tags: a dict of POI tags
-    :param columns: a list of interested column names
-    :return: a geopandas dataframe containing points of interest
-    """
-    north, south, west, east = get_bbox(latitude, longitude, box_width, box_height)
-    pois = ox.geometries_from_bbox(north, south, east, west, tags)
-
-    for key in tags.keys():
-        if key not in columns:
-            columns.append(key)
-    present_columns = [key for key in columns if key in pois.columns]
-
-    return pois[present_columns]
-
-
-def plot_POI(
-    latitude,
-    longitude,
-    place_name,
-    box_height,
-    box_width,
-    pois,
-    graph_name=None,
-    plot_coordinate=False,
-):
-    """Geo-plot POIs on the map for the given place specified by place_name
-    :param latitude: latitude
-    :param longitude: longitude
-    :param place_name: a geo-decodable string representing place name
-    :param box_width: width of bbox
-    :param box_height: height of bbox
-    :param pois: a list of POIs
-    :param graph_name: the name of the plot
-    :param plot_coordinate: boolean value, plot the coordinate (lat, long) if true
-    :return: None
-    """
-    north, south, west, east = get_bbox(latitude, longitude, box_width, box_height)
-
-    graph = ox.graph_from_bbox(north, south, east, west)
-    _, edges = ox.graph_to_gdfs(graph)
-    area = ox.geocode_to_gdf(place_name)
-
-    fig, ax = plt.subplots(figsize=plot.big_figsize)
-    area.plot(ax=ax, facecolor="white")
-    edges.plot(ax=ax, linewidth=1, edgecolor="dimgray")
-
-    ax.set_xlim([west, east])
-    ax.set_ylim([south, north])
-    ax.set_xlabel("longitude")
-    ax.set_ylabel("latitude")
-
-    # Plot all POIs
-    if plot_coordinate:
-        plt.plot(longitude, latitude, "bo", markersize=10, alpha=0.6)
-    for poi in pois:
-        poi.plot(ax=ax, alpha=0.8, markersize=10)
-    plt.tight_layout()
-    if graph_name is not None:
-        ax.set_title(f"{graph_name}")
-    plt.show()
 
 
 def sample_locations_from_bbox(
@@ -319,32 +297,6 @@ def calculate_features(df, features, dist_threshold, pois_map):
     return df
 
 
-def download_POI_for_feature_list(
-    latitude, longitude, feature_box_width, feature_box_height, features
-):
-    """Download POIs from OpenStreetMap as specified by the tags attributes in `features`
-    :param latitude: latitude
-    :param longitude: longitude
-    :param feature_box_width: width of feature bbox
-    :param feature_box_height: height of feature bbox
-    :param features: a JSON encoding of features
-    :return: a mapping from feature name to POIs
-    """
-    pois_map = {}
-    for name, prop in features.items():
-        tag = prop["tags"]
-        pois = download_POI_around_coordinate(
-            latitude,
-            longitude,
-            box_width=feature_box_width,
-            box_height=feature_box_height,
-            tags=tag,
-        )
-        pois_map[name] = pois
-        print(f"POIs for feature: {name} downloaded")
-    return pois_map
-
-
 def plot_geo_transactions(df):
     """Plot house locations as specified in `df` on UK map
     :param df: a dataframe representing house locations
@@ -360,6 +312,53 @@ def plot_geo_transactions(df):
         c=np.log(df.price.values),
         alpha=0.005,
     )
+    plt.show()
+
+
+def plot_POI(
+    latitude,
+    longitude,
+    place_name,
+    box_height,
+    box_width,
+    pois,
+    graph_name=None,
+    plot_coordinate=False,
+):
+    """Geo-plot POIs on the map for the given place specified by place_name
+    :param latitude: latitude
+    :param longitude: longitude
+    :param place_name: a geo-decodable string representing place name
+    :param box_width: width of bbox
+    :param box_height: height of bbox
+    :param pois: a list of POIs
+    :param graph_name: the name of the plot
+    :param plot_coordinate: boolean value, plot the coordinate (lat, long) if true
+    :return: None
+    """
+    north, south, west, east = get_bbox(latitude, longitude, box_width, box_height)
+
+    graph = ox.graph_from_bbox(north, south, east, west)
+    _, edges = ox.graph_to_gdfs(graph)
+    area = ox.geocode_to_gdf(place_name)
+
+    fig, ax = plt.subplots(figsize=plot.big_figsize)
+    area.plot(ax=ax, facecolor="white")
+    edges.plot(ax=ax, linewidth=1, edgecolor="dimgray")
+
+    ax.set_xlim([west, east])
+    ax.set_ylim([south, north])
+    ax.set_xlabel("longitude")
+    ax.set_ylabel("latitude")
+
+    # Plot all POIs
+    if plot_coordinate:
+        plt.plot(longitude, latitude, "bo", markersize=10, alpha=0.6)
+    for poi in pois:
+        poi.plot(ax=ax, alpha=0.8, markersize=10)
+    plt.tight_layout()
+    if graph_name is not None:
+        ax.set_title(f"{graph_name}")
     plt.show()
 
 
