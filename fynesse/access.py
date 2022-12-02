@@ -10,6 +10,7 @@ from pymysql.constants import CLIENT
 import urllib.request
 import zipfile
 import requests
+import osmnx as ox
 
 
 def create_connection(user, password, host, database, port=3306):
@@ -238,3 +239,124 @@ class PostcodeData(DatabaseTable):
         )
         self.conn.commit()
         print(f"postcode_data loaded")
+
+
+def download_POI_around_coordinate(
+    latitude,
+    longitude,
+    box_width=0.02,
+    box_height=0.02,
+    tags={},
+    columns=["name", "addr:city", "addr:postcode", "addr:street", "geometry"],
+):
+    """Download POI as specified by tags around a coordinate
+    :param latitude: latitude
+    :param longitude: longitude
+    :param box_width: width of bbox
+    :param box_height: height of bbox
+    :param tags: a dict of POI tags
+    :param columns: a list of interested column names
+    :return: a geopandas dataframe containing points of interest
+    """
+    north = latitude + box_height / 2
+    south = latitude - box_height / 2
+    west = longitude - box_width / 2
+    east = longitude + box_width / 2
+
+    pois = ox.geometries_from_bbox(north, south, east, west, tags)
+
+    for key in tags.keys():
+        if key not in columns:
+            columns.append(key)
+    present_columns = [key for key in columns if key in pois.columns]
+
+    return pois[present_columns]
+
+
+def download_POI_for_feature_list(
+    latitude, longitude, feature_box_width, feature_box_height, features
+):
+    """Download POIs from OpenStreetMap as specified by the tags attributes in `features`
+    :param latitude: latitude
+    :param longitude: longitude
+    :param feature_box_width: width of feature bbox
+    :param feature_box_height: height of feature bbox
+    :param features: a JSON encoding of features
+    :return: a mapping from feature name to POIs
+    """
+    pois_map = {}
+    for name, prop in features.items():
+        tag = prop["tags"]
+        pois = download_POI_around_coordinate(
+            latitude,
+            longitude,
+            box_width=feature_box_width,
+            box_height=feature_box_height,
+            tags=tag,
+        )
+        pois_map[name] = pois
+        print(f"POIs for feature: {name} downloaded")
+    return pois_map
+
+
+def get_joined_transactions(
+    conn,
+    start_date,
+    end_date,
+    latitude=None,
+    longitude=None,
+    box_width=None,
+    box_height=None,
+    property_type=None,
+    limit=None,
+    pp_data="pp_data",
+    postcode_data="postcode_data",
+):
+    """Perform an inner join on table `pp_data` and `postcode_data`, joining rows that have the same postcode.
+    :param conn: a connection to databse
+    :param start_date: start date
+    :param end_date: end date
+    :param latitude: latitude
+    :param longitude: longitude
+    :param box_width: width of bbox
+    :param box_height: height of bbox
+    :param property_type: property_type of the housing
+    :param limit: the maximum number of retrieved entries
+    :param pp_data: table name for pp_data
+    :param postcode_data: table name for postcode_dat
+    :return: a dataframe containing results of the inner-join query
+    """
+    if latitude is not None and box_height is None:
+        raise RuntimeError("box_height needs to be defined when passing in a latitude")
+    if longitude is not None and box_width is None:
+        raise RuntimeError("box_width needs to be defined when passing in a longitude")
+
+    inner_query = f"""
+    SELECT postcode, lattitude, longitude 
+    FROM {postcode_data} 
+    WHERE true"""
+
+    if latitude is not None:
+        inner_query = (
+            inner_query
+            + f" and lattitude <= {latitude + box_height / 2} and lattitude >= {latitude - box_height / 2}"
+        )
+    if longitude is not None:
+        inner_query = (
+            inner_query
+            + f" and longitude <= {longitude + box_width / 2} and longitude >= {longitude - box_width / 2}"
+        )
+
+    sql_query_prefix = f"SELECT * FROM `{pp_data}` AS p INNER JOIN ( "
+    sql_query_suffix = f""" 
+    ) AS c 
+    ON p.postcode = c.postcode 
+    WHERE date_of_transfer >= date({start_date.strftime("%Y%m%d")}) and date_of_transfer <= date({end_date.strftime("%Y%m%d")})"""
+    if property_type is not None:
+        sql_query_suffix = sql_query_suffix + f" and property_type = '{property_type}'"
+    if limit is not None:
+        sql_query_suffix = sql_query_suffix + f" LIMIT {limit}"
+
+    sql_query = sql_query_prefix + inner_query + sql_query_suffix
+    df = pd.read_sql(sql_query, con=conn)
+    return df

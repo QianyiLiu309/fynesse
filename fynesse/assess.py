@@ -1,5 +1,5 @@
 from .config import *
-from fynesse import access
+from access import download_POI_for_feature_list
 
 import mlai
 import mlai.plot as plot
@@ -16,6 +16,21 @@ import matplotlib.pyplot as plt
 
 
 """Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes sure they are correctly labeled. How is the data indexed. Create visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
+
+
+def get_bbox(latitude, longitude, box_width, box_height):
+    """Create a bounding box based on the coordinate
+    :param north: north
+    :param south: south
+    :param west: west
+    :param esat: east
+    :return: a tuple (north, south, west, east) representing the bounding box
+    """
+    north = latitude + box_height / 2
+    south = latitude - box_height / 2
+    west = longitude - box_width / 2
+    east = longitude + box_width / 2
+    return (north, south, west, east)
 
 
 def verify_database(conn):
@@ -137,60 +152,6 @@ def get_shortest_distance_to_POI(latitude, longitude, pois, threshold):
     return shortest_dist * 111
 
 
-def download_POI_around_coordinate(
-    latitude,
-    longitude,
-    box_width=0.02,
-    box_height=0.02,
-    tags={},
-    columns=["name", "addr:city", "addr:postcode", "addr:street", "geometry"],
-):
-    """Download POI as specified by tags around a coordinate
-    :param latitude: latitude
-    :param longitude: longitude
-    :param box_width: width of bbox
-    :param box_height: height of bbox
-    :param tags: a dict of POI tags
-    :param columns: a list of interested column names
-    :return: a geopandas dataframe containing points of interest
-    """
-    north, south, west, east = get_bbox(latitude, longitude, box_width, box_height)
-    pois = ox.geometries_from_bbox(north, south, east, west, tags)
-
-    for key in tags.keys():
-        if key not in columns:
-            columns.append(key)
-    present_columns = [key for key in columns if key in pois.columns]
-
-    return pois[present_columns]
-
-
-def download_POI_for_feature_list(
-    latitude, longitude, feature_box_width, feature_box_height, features
-):
-    """Download POIs from OpenStreetMap as specified by the tags attributes in `features`
-    :param latitude: latitude
-    :param longitude: longitude
-    :param feature_box_width: width of feature bbox
-    :param feature_box_height: height of feature bbox
-    :param features: a JSON encoding of features
-    :return: a mapping from feature name to POIs
-    """
-    pois_map = {}
-    for name, prop in features.items():
-        tag = prop["tags"]
-        pois = download_POI_around_coordinate(
-            latitude,
-            longitude,
-            box_width=feature_box_width,
-            box_height=feature_box_height,
-            tags=tag,
-        )
-        pois_map[name] = pois
-        print(f"POIs for feature: {name} downloaded")
-    return pois_map
-
-
 def create_gdf_from_df(
     df, latitude_col_name="lattitude", longitude_col_name="longitude"
 ):
@@ -207,21 +168,6 @@ def create_gdf_from_df(
     return gpd.GeoDataFrame(
         df, geometry=gpd.points_from_xy(df[latitude_col_name], df[longitude_col_name])
     )
-
-
-def get_bbox(latitude, longitude, box_width, box_height):
-    """Create a bounding box based on the coordinate
-    :param north: north
-    :param south: south
-    :param west: west
-    :param esat: east
-    :return: a tuple (north, south, west, east) representing the bounding box
-    """
-    north = latitude + box_height / 2
-    south = latitude - box_height / 2
-    west = longitude - box_width / 2
-    east = longitude + box_width / 2
-    return (north, south, west, east)
 
 
 def sample_locations_from_bbox(

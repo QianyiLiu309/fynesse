@@ -169,7 +169,8 @@ def evaluate_model(conn, validation_df, model_name, args):
     :param validation_df: the validation dataset of property price
     :param model_name: a string representing model name
     :param args: hyperparameters to the model
-    :return: a pair of arrays containing real property prices and predicted prices
+    :return: a pair of arrays containing real property prices and predicted property prices
+
     """
     real_price_ls = []
     predicted_price_ls = []
